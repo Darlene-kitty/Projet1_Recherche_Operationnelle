@@ -15,6 +15,7 @@
 | **DONGMO MINTIDEM VANECK** | Simulation campagne + Visualisations | • **Q5 : 5 jours (degré max)** <br> • **Q6 : 7 jours (proximité min)** <br> • `remove_nodes.py` <br> • `visualize_all.py` (8 images) |
 
 
+
 ---
 
 ## Description du Projet
