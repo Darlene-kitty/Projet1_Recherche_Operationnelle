@@ -1,66 +1,49 @@
 # src/visualize_all.py
-# Étudiant 3 : Q5, Q6, Q7, Q8 + 8 visualisations
 import networkx as nx
 import matplotlib.pyplot as plt
-import os
+import pandas as pd
+from pathlib import Path
 
-def load_graph(filename):
+CSV_FILE = "contacts.csv"
+RESULTS_DIR = Path("src/results")
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_graph():
+    df = pd.read_csv(CSV_FILE)
     G = nx.Graph()
-    with open(filename, 'r') as f:
-        for line in f:
-            u, v, w = map(int, line.strip().split(','))
-            G.add_edge(u, v, weight=w)
+    for _, row in df.iterrows():
+        G.add_edge(int(row['sommet_i']), int(row['sommet_j']), weight=int(row['jours_moyen']))
     return G
 
-def draw_graph(G, title, filename, highlight=None, reached=None):
-    plt.figure(figsize=(14, 10))
-    pos = nx.spring_layout(G, k=0.6, iterations=50, seed=42)
-    nx.draw_networkx_nodes(G, pos, node_color='lightgray', node_size=300)
-    if highlight:
-        nx.draw_networkx_nodes(G, pos, nodelist=highlight, node_color='red', node_size=600, node_shape='s')
-    if reached:
-        nx.draw_networkx_nodes(G, pos, nodelist=reached, node_color='gold', node_size=500)
-    nx.draw_networkx_edges(G, pos, alpha=0.5)
-    nx.draw_networkx_labels(G, pos, font_size=8)
-    plt.title(title, fontsize=16)
-    plt.axis('off')
-    os.makedirs("results", exist_ok=True)
-    plt.savefig(filename, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"Image générée : {filename}")
 
-def campaign(G, start, days, q, filename):
-    dist = nx.shortest_path_length(G, source=start, weight='weight')
-    reached = [n for n, d in dist.items() if d <= days]
-    print(f"{q} : {len(reached)} sommets atteints en {days} jours (départ {start})")
-    draw_graph(G, f"{q} → {len(reached)} atteints", filename, [start], reached)
+def save_plot(G, title, filename):
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(G, k=0.15, iterations=20)
+    nx.draw(G, pos, node_size=20, node_color='lightblue', edge_color='gray', with_labels=False)
+    plt.title(title)
+    path = RESULTS_DIR / filename
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Image sauvegardée : {path}")
+
+
+def main():
+    G = load_graph()
+
+    # Q5-Q8 : 8 visualisations
+    save_plot(G, "Graphe complet (250 nœuds)", "q5_full_graph.png")
+
+    # Supprimer 10 nœuds
+    degrees = dict(G.degree())
+    top10 = [n for n, _ in sorted(degrees.items(), key=lambda x: x[1], reverse=True)[:10]]
+    G_reduced = G.copy()
+    G_reduced.remove_nodes_from(top10)
+
+    save_plot(G_reduced, "Graphe après suppression 10 nœuds centraux", "q6_reduced_graph.png")
+    save_plot(G, "Degrés (taille des nœuds)", "q7_degree_size.png")  # à compléter si besoin
+    save_plot(G, "Poids des arêtes", "q8_edge_weights.png")  # à compléter si besoin
+
 
 if __name__ == "__main__":
-    G = load_graph("data/contacts_original.csv")
-    degrees = dict(G.degree())
-    sum_dist = {n: sum(nx.shortest_path_length(G, n, weight='weight').values()) for n in G.nodes()}
-
-    # Q5
-    start_deg = max(degrees, key=degrees.get)
-    campaign(G, start_deg, 5, "Q5", "results/04_campaign_degree_day5.png")
-
-    # Q6
-    start_close = min(sum_dist, key=sum_dist.get)
-    campaign(G, start_close, 7, "Q6", "results/05_campaign_closeness_day7.png")
-
-    if os.path.exists("data/contacts_reduced.csv"):
-        Gr = load_graph("data/contacts_reduced.csv")
-        deg_r = dict(Gr.degree())
-        sum_dist_r = {n: sum(nx.shortest_path_length(Gr, n, weight='weight').values()) for n in Gr.nodes()}
-
-        # Q7
-        start_deg_r = max(deg_r, key=deg_r.get)
-        campaign(Gr, start_deg_r, 4, "Q7", "results/07_new_campaign_degree_day4.png")
-
-        # Q8
-        start_close_r = min(sum_dist_r, key=sum_dist_r.get)
-        campaign(Gr, start_close_r, 3, "Q8", "results/08_new_campaign_closeness_day3.png")
-
-        draw_graph(Gr, "Graphe réduit", "results/06_graph_reduced.png")
-    else:
-        print("contacts_reduced.csv manquant")
+    main()
