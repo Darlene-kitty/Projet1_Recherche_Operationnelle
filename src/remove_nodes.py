@@ -1,7 +1,8 @@
 # src/remove_nodes.py
+# Étudiant 3 : Suppression des 10 nœuds clés
+import networkx as nx
 import csv
 import os
-import networkx as nx
 
 def load_graph(filename):
     G = nx.Graph()
@@ -17,21 +18,17 @@ def save_graph(G, filename):
         writer = csv.writer(f)
         for u, v, data in G.edges(data=True):
             writer.writerow([u, v, data['weight']])
-    print(f"Nouveau graphe : {G.number_of_nodes()} sommets, {G.number_of_edges()} arêtes")
-    print(f"Sauvegardé dans : {filename}")
+    print(f"Nouveau graphe : {G.number_of_nodes()} sommets → sauvegardé dans {filename}")
 
 if __name__ == "__main__":
     if not os.path.exists("data/contacts_original.csv"):
-        print("Erreur : contacts_original.csv manquant. Lancez generate_graph.py")
+        print("Erreur : contacts_original.csv manquant.")
         exit()
 
     G = load_graph("data/contacts_original.csv")
-
-    # Top 5 degré
     degrees = dict(G.degree())
     top5_deg = [n for n, _ in sorted(degrees.items(), key=lambda x: x[1], reverse=True)[:5]]
 
-    # Top 5 proximité
     sum_dist = {}
     for node in G.nodes():
         try:
@@ -41,7 +38,6 @@ if __name__ == "__main__":
             sum_dist[node] = float('inf')
     top5_close = [n for n, _ in sorted(sum_dist.items(), key=lambda x: x[1])[:5]]
 
-    # 10 nœuds uniques
     to_remove = list(set(top5_deg + top5_close))
     print(f"Suppression de {len(to_remove)} nœuds : {sorted(to_remove)}")
 
